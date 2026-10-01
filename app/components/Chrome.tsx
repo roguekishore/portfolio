@@ -120,8 +120,8 @@ function DesktopHeader() {
               <div className="border-t border-white/5 px-[14px] pt-[21px] pb-[14px]">
                 <p className="t-label pb-[22px] text-grey">Channels</p>
                 {channels.map((c) => (
-                  <a key={c} href="#" className="t-label block py-[2px] leading-[11px] text-white transition-opacity duration-[167ms] hover:opacity-60">
-                    {c}
+                  <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer" className="t-label block py-[2px] leading-[11px] text-white transition-opacity duration-[167ms] hover:opacity-60">
+                    {c.label}
                   </a>
                 ))}
               </div>
@@ -229,8 +229,8 @@ function MobileMenu() {
       <div className="relative mt-auto border-t border-white/10 pt-[18px]">
         <p className="t-label pb-[22px] text-grey">Channels</p>
         {channels.map((c) => (
-          <a key={c} href="#" className="t-label block py-[3px]">
-            {c}
+          <a key={c.label} href={c.href} target="_blank" rel="noopener noreferrer" className="t-label block py-[3px]">
+            {c.label}
           </a>
         ))}
         <div className="t-small flex gap-x-4 pt-[60px] text-grey">
@@ -239,7 +239,7 @@ function MobileMenu() {
           ))}
         </div>
         <div className="t-small mt-[14px] flex justify-between border-t border-white/10 pt-[14px] text-mid-grey">
-          <span>{copyright} Orbe Studio</span>
+          <span>{copyright}</span>
         </div>
       </div>
     </div>

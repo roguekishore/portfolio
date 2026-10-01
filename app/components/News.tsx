@@ -1,23 +1,20 @@
-import { news, type NewsItem } from "@/lib/content";
+import { news, newsCopy, type NewsItem } from "@/lib/content";
 import Media from "./Media";
-import { BracketLabel } from "./bits";
 
+// Layout of the reference's "Studio news" block, carrying the About content.
 export default function News() {
   const [feature, ...rest] = news;
   return (
-    <section id="news" className="pt-6 pb-16 md:pt-24 md:pb-37">
+    <section id="about" className="pt-6 pb-16 md:pt-24 md:pb-37">
       <div className="flex items-center justify-between pb-6 md:pb-9">
         <div className="w-full md:px-3">
           <div className="flex w-full items-center justify-between border-white/10 md:border-t md:py-6">
             <div className="flex flex-col md:flex-row md:gap-x-2">
-              <h2 className="t-heading md:hidden">Studio news</h2>
-              <p className="t-heading text-grey md:hidden">Press, talks, and events</p>
-              <h2 className="t-label hidden md:block">Studio news</h2>
-              <p className="t-label hidden text-grey md:block">Press, talks, and events</p>
+              <h2 className="t-heading md:hidden">{newsCopy.heading}</h2>
+              <p className="t-heading text-grey md:hidden">{newsCopy.subheading}</p>
+              <h2 className="t-label hidden md:block">{newsCopy.heading}</h2>
+              <p className="t-label hidden text-grey md:block">{newsCopy.subheading}</p>
             </div>
-            <a href="#" className="group hidden md:block">
-              <BracketLabel>View all</BracketLabel>
-            </a>
           </div>
         </div>
       </div>
@@ -35,19 +32,17 @@ export default function News() {
             ))}
           </div>
         </div>
-        <a href="#" className="group mt-2 block md:hidden">
-          <BracketLabel>View all</BracketLabel>
-        </a>
       </div>
     </section>
   );
 }
 
 function Story({ item, feature = false }: { item: NewsItem; feature?: boolean }) {
-  return (
-    <a href="#" className={`group block ${feature ? "pb-8 md:pb-0" : "flex items-center gap-x-4 border-t border-white/10 py-3 md:block md:border-0 md:py-0"}`}>
+  const className = `group block ${feature ? "pb-8 md:pb-0" : "flex items-center gap-x-4 border-t border-white/10 py-3 md:block md:border-0 md:py-0"}`;
+  const body = (
+    <>
       <div className={`relative overflow-hidden rounded-sm bg-off-black ${feature ? "aspect-video" : "aspect-[3/2] w-[60px] shrink-0 md:aspect-video md:w-auto"}`}>
-        <Media variant={item.media} />
+        <Media variant={item.media} src={item.src} sizes={feature ? "(min-width: 52.125rem) 45vw, 100vw" : "(min-width: 52.125rem) 28vw, 60px"} />
       </div>
       <div className={feature ? "pt-3 md:pt-[14px]" : "md:pt-[14px]"}>
         <h3 className="t-body text-white">{item.title}</h3>
@@ -57,6 +52,7 @@ function Story({ item, feature = false }: { item: NewsItem; feature?: boolean })
           <span className="t-label text-grey normal-case">{item.date}</span>
         </div>
       </div>
-    </a>
+    </>
   );
+  return item.href ? <a href={item.href} className={className}>{body}</a> : <div className={className}>{body}</div>;
 }

@@ -152,7 +152,9 @@ type LinkProps = Omit<ComponentProps<typeof Link>, "href"> & { href: string };
 // through to the browser.
 export function TLink({ href, onClick, ...rest }: LinkProps) {
   const t = useContext(Ctx);
-  if (href.startsWith("#")) return <a href={href} onClick={onClick} {...rest} />;
+  // Hash links to homepage sections ("/#about") stay plain anchors so the
+  // browser scrolls to them, from any page.
+  if (href.startsWith("#") || href.startsWith("/#")) return <a href={href} onClick={onClick} {...rest} />;
   return (
     <Link
       href={href}

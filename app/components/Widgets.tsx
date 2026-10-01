@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { news, offices, type MediaVariant } from "@/lib/content";
+import { drawerPhotos as PHOTOS, helloVisual, news, newsCopy, offices } from "@/lib/content";
 import Media from "./Media";
-import { Arrow, BracketLabel } from "./bits";
+import { Arrow } from "./bits";
 import { useUI } from "./ui";
-
-const PHOTOS: MediaVariant[] = ["dusk", "curve", "rings", "glow"];
 
 function useZonedTime(tz: string) {
   const [t, setT] = useState<{ h: number; m: number; label: string } | null>(null);
@@ -75,8 +73,8 @@ export default function Widgets() {
               <div className="pointer-events-auto flex flex-col gap-y-4" style={fade(200)}>
                 <div className="relative aspect-[5/3] overflow-hidden rounded-md bg-off-black">
                   {PHOTOS.map((v, i) => (
-                    <div key={v} className={`absolute inset-0 ${i === photo ? "z-1 opacity-100" : "opacity-0"}`}>
-                      <Media variant={v} paused={!open} />
+                    <div key={i} className={`absolute inset-0 ${i === photo ? "z-1 opacity-100" : "opacity-0"}`}>
+                      <Media {...v} sizes="274px" paused={!open} />
                     </div>
                   ))}
                 </div>
@@ -98,7 +96,7 @@ export default function Widgets() {
             <div style={slide(370, 0)}>
               <div className="pointer-events-auto flex flex-col gap-y-4" style={fade(167)}>
                 <div className="relative aspect-[5/3] overflow-hidden rounded-md">
-                  <Media variant="tiles" paused={!open} />
+                  <Media {...helloVisual} sizes="370px" paused={!open} />
                   <div className="absolute inset-0 bg-linear-to-b from-black/0 via-black/0 via-55% to-black/70" />
                   <div className="absolute inset-x-0 bottom-0 flex items-center gap-x-2 p-2">
                     <span className="grid h-9 w-9 place-items-center rounded-sm bg-yellow text-black">
@@ -113,21 +111,18 @@ export default function Widgets() {
 
                 <div className="flex flex-col gap-y-5 rounded-md bg-off-black p-3 pt-[14px] sm:gap-y-6">
                   <div className="flex items-center justify-between">
-                    <h2 className="t-label text-grey">Latest news</h2>
-                    <a href="#" className="group">
-                      <BracketLabel>All</BracketLabel>
-                    </a>
+                    <h2 className="t-label text-grey">{newsCopy.drawerHeading}</h2>
                   </div>
                   <div>
                     {news.map((n, i) => (
-                      <a key={n.title} href="#" className={`flex items-center gap-x-4 border-white/5 py-3 ${i < news.length - 1 ? "border-b" : ""} ${i === 0 ? "pt-1" : ""}`}>
+                      <a key={n.title} href={n.href ?? "/#about"} onClick={close} className={`flex items-center gap-x-4 border-white/5 py-3 ${i < news.length - 1 ? "border-b" : ""} ${i === 0 ? "pt-1" : ""}`}>
                         <div className="min-w-0 flex-1">
                           <p className="t-small truncate">{n.title}</p>
-                          <p className="t-small truncate text-grey">{n.excerpt ?? "Read the full story on the journal."}</p>
+                          {n.excerpt && <p className="t-small truncate text-grey">{n.excerpt}</p>}
                           <p className="t-chip pt-2 text-white/80">{n.tag}</p>
                         </div>
                         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xs">
-                          <Media variant={n.media} paused={!open} />
+                          <Media variant={n.media} src={n.src} sizes="80px" paused={!open} />
                         </div>
                       </a>
                     ))}

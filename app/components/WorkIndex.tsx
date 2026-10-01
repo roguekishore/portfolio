@@ -136,7 +136,7 @@ export function FeaturedCard({ project }: { project: Project }) {
       <TLink href={`/projects/${project.slug}`} className="group block rounded-md bg-off-black">
         <div className={`flex gap-x-3 p-2 pr-1 transition-[opacity,translate] delay-200 duration-[333ms] ease-[var(--ease-text-in)] ${shown ? "translate-y-0 opacity-100" : "translate-y-[10px] opacity-0"}`}>
           <div className="relative aspect-square w-[76px] shrink-0 scale-95 overflow-hidden rounded-[1.5rem]">
-            <Media variant={project.media} tint={project.tint} />
+            <Media variant={project.media} tint={project.tint} src={project.src} sizes="160px" />
           </div>
           <div className="flex min-w-0 flex-col pt-[2px] pb-1">
             <h2 className="t-body truncate">{project.client}</h2>
@@ -164,7 +164,7 @@ function Card({ project, shape, dim, onHover }: { project: Project; shape: strin
     >
       <div className={`relative ${shape}`}>
         <div className="relative z-1 h-full w-full overflow-hidden rounded-md bg-off-black transition-[height] duration-[167ms] ease-linear md:group-hover:h-[calc(100%-24px)]">
-          <Media variant={project.media} tint={project.tint} mark={project.mark} markColor={project.markColor} />
+          <Media variant={project.media} tint={project.tint} mark={project.mark} markColor={project.markColor} src={project.src} sizes="(min-width: 52.125rem) 40vw, 100vw" />
         </div>
         <div className="absolute bottom-0 left-0 hidden w-full justify-between gap-x-2 pt-2 opacity-0 transition-opacity duration-[167ms] ease-linear group-hover:opacity-100 group-hover:delay-[167ms] md:flex">
           <p className="t-body truncate text-white">{project.client}</p>
@@ -221,7 +221,7 @@ function FilterPanel({ open, active, onClose, onChoose }: { open: boolean; activ
                 <button key={c.slug} type="button" onClick={() => onChoose(c.slug)} className="group text-left">
                   <div className={`glass-strong flex gap-x-4 rounded-md p-2 pr-1 transition-colors duration-[167ms] ease-linear md:gap-x-3 md:pr-6 ${active === c.slug ? "bg-white/15" : "bg-white/5 group-hover:bg-white/10"}`}>
                     <div className="relative aspect-square w-[56px] shrink-0 overflow-hidden rounded-sm md:w-[76px]">
-                      <Media {...c.thumb} />
+                      <Media {...c.thumb} sizes="160px" />
                     </div>
                     <div className="flex flex-col justify-between py-1">
                       <p className="t-body text-white">{c.name}</p>

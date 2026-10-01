@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { contact, copyright, legal, offices } from "@/lib/content";
+import { contact, contactCopy, copyright, helloVisual, legal, offices } from "@/lib/content";
 import Media from "./Media";
 import { UnderlineLink } from "./bits";
 
@@ -25,8 +25,8 @@ export default function Contact() {
       <section id="contact" className="pt-6 md:pt-43">
         <div className="grid grid-cols-8 gap-y-12 pb-11 md:grid-cols-16 md:gap-x-2 md:pb-0">
           <div className="col-span-8 md:col-span-5 md:pl-3">
-            <h2 className="t-heading">Contact</h2>
-            <p className="t-heading text-grey">Press and careers</p>
+            <h2 className="t-heading">{contactCopy.heading}</h2>
+            <p className="t-heading text-grey">{contactCopy.subheading}</p>
           </div>
           <div ref={rows} className="col-span-8 flex flex-col gap-y-3 md:col-span-9 md:col-start-8">
             {contact.map((row, i) => (
@@ -44,8 +44,8 @@ export default function Contact() {
                       <p key={l} className="hidden text-white md:block">{l}</p>
                     ))}
                     {row.links.map((l) => (
-                      <div key={l}>
-                        <UnderlineLink className="transition-colors duration-[167ms] hover:text-white">{l}</UnderlineLink>
+                      <div key={l.label}>
+                        <UnderlineLink href={l.href} className="transition-colors duration-[167ms] hover:text-white">{l.label}</UnderlineLink>
                       </div>
                     ))}
                   </div>
@@ -103,7 +103,7 @@ function OfficeCard({ email }: { email: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="relative aspect-[5/3] overflow-hidden rounded-md">
-      <Media variant="tiles" />
+      <Media {...helloVisual} sizes="370px" />
       <div className="absolute inset-0 bg-linear-to-b from-black/0 via-black/0 via-55% to-black/70" />
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-2">
         <div className="t-label flex flex-col gap-y-[3px] text-white">

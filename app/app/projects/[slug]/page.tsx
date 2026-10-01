@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import CaseStudy from "@/components/case/CaseStudy";
-import { allProjects, caseStudies, nextProject, projectBySlug } from "@/lib/content";
+import { allProjects, caseStudies, nextProject, person, projectBySlug } from "@/lib/content";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -15,7 +15,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const project = projectBySlug(slug);
-  return project ? { title: `${project.client} — Orbe`, description: project.title } : {};
+  return project ? { title: `${project.client} — ${person.name}`, description: project.description } : {};
 }
 
 export default async function ProjectPage({ params }: Props) {

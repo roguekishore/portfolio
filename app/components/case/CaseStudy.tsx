@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import type { CaseModule, CaseStudy as CaseData, Project, Visual } from "@/lib/content";
+import { nextCopy, type CaseModule, type CaseStudy as CaseData, type Project, type Visual } from "@/lib/content";
 import Media from "../Media";
-import { Arrow, BracketLabel, PlayPause } from "../bits";
+import { Arrow, BracketLabel, PlayPause, UnderlineLink } from "../bits";
 import { TLink, useTransition } from "../Transition";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -125,6 +125,11 @@ function Module({ module: m }: { module: CaseModule }) {
                 {m.body.map((p) => (
                   <p key={p} className="t-body text-grey">{p}</p>
                 ))}
+                {m.links?.map((l) => (
+                  <div key={l.href} className="t-body text-grey">
+                    <UnderlineLink href={l.href} className="transition-colors duration-[167ms] hover:text-white">{l.label}</UnderlineLink>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -187,7 +192,7 @@ function MediaFrame({ visual, className = "", flush = false, children }: { visua
 }
 
 // Sidebar (desktop) and bottom bar (mobile) share one scroll-spy.
-function CaseNav({ project, chapters, credits }: { project: Project; chapters: Chapter[]; credits: string }) {
+function CaseNav({ project, chapters, credits }: { project: Project; chapters: Chapter[]; credits?: string }) {
   const [active, setActive] = useState(0);
   const [creditsOpen, setCreditsOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
@@ -238,7 +243,7 @@ function CaseNav({ project, chapters, credits }: { project: Project; chapters: C
               ))}
             </div>
           </div>
-          <div className="mt-auto">
+          {credits && <div className="mt-auto">
             <div className={`origin-bottom-left transition-transform duration-[417ms] ease-[cubic-bezier(0.03,0,0,1)] ${atEnd ? "scale-100" : "scale-0"}`}>
               <div className="rounded-md bg-off-black p-3">
                 <button type="button" onClick={() => setCreditsOpen((o) => !o)} className="flex w-full cursor-pointer items-center justify-between">
@@ -248,7 +253,7 @@ function CaseNav({ project, chapters, credits }: { project: Project; chapters: C
                 <p className={`t-small pt-3 text-grey ${creditsOpen ? "" : "line-clamp-2"}`}>{credits}</p>
               </div>
             </div>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -318,14 +323,14 @@ function NextFooter({ next, index, total }: { next: { project: Project; hero: Vi
             <div className="flex gap-x-6 md:mt-auto">
               <div data-footer-fade className={`mt-auto hidden w-full flex-col gap-y-27 border-t border-white/10 py-4 md:flex ${leave}`}>
                 <p className="t-small max-w-62">
-                  Have a project in mind?
-                  <span className="block text-grey">Tell us where you are and where you want to go.</span>
+                  {nextCopy.prompt}
+                  <span className="block text-grey">{nextCopy.promptSub}</span>
                 </p>
                 <div className="flex">
-                  <a href="#" className="group glass-strong relative flex items-center overflow-hidden rounded-xs p-[14px]">
+                  <a href={nextCopy.cta.href} className="group glass-strong relative flex items-center overflow-hidden rounded-xs p-[14px]">
                     <span className="absolute inset-0 bg-white/5 transition-colors duration-[167ms] ease-linear group-hover:bg-white/10" />
                     <span className="t-label relative flex items-center gap-x-[6px] text-grey">
-                      Get in touch <Arrow />
+                      {nextCopy.cta.label} <Arrow />
                     </span>
                   </a>
                 </div>

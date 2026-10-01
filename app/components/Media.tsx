@@ -1,5 +1,7 @@
 import type { CSSProperties } from "react";
+import Image from "next/image";
 import type { MediaVariant } from "@/lib/content";
+import MediaVideo from "./MediaVideo";
 import s from "./Media.module.css";
 
 type Props = {
@@ -7,16 +9,25 @@ type Props = {
   tint?: string;
   mark?: string;
   markColor?: string;
+  src?: string;
+  sizes?: string;
+  video?: boolean;
   paused?: boolean;
   className?: string;
 };
 
-// Animated stand-ins for the reference site's case-study videos. Each variant
-// is an original abstract composition; `mark` is a fictional client wordmark.
-export default function Media({ variant, tint, mark, markColor = "#fff", paused, className = "" }: Props) {
+const isVideo = (src: string) => /\.(mp4|webm)$/i.test(src);
+
+// Project imagery when `src` is set (image or looping video); otherwise an
+// abstract animated composition stands in.
+export default function Media({ variant, tint, mark, markColor = "#fff", src, sizes = "(min-width: 52.125rem) 66vw, 100vw", paused, className = "" }: Props) {
   return (
-    <div className={`${s.root} ${className}`} data-paused={paused ? "true" : "false"} style={{ background: tint ?? DEFAULT_TINT[variant] }} aria-hidden>
-      <Scene variant={variant} />
+    <div className={`${s.root} ${className}`} data-paused={paused ? "true" : "false"} style={{ background: src ? "#141414" : (tint ?? DEFAULT_TINT[variant]) }} aria-hidden>
+      {src ? (
+        isVideo(src) ? <MediaVideo src={src} paused={paused} className={s.fill} /> : <Image src={src} alt="" fill sizes={sizes} className={s.fill} draggable={false} />
+      ) : (
+        <Scene variant={variant} />
+      )}
       {mark && (
         <div className={s.mark} style={{ color: markColor } as CSSProperties}>
           <span>{mark}</span>

@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 
-// Placeholder wordmark for the fictional studio.
+// Personal mark from the original portfolio (public/logo-white.svg).
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <span className={`inline-flex items-center gap-[3px] font-sans text-yellow ${className}`} aria-label="Orbe">
-      <span className="text-[25px] leading-none font-[780] tracking-[-0.06em] [font-stretch:112%]">orbe</span>
-      <span className="mb-[11px] h-[5px] w-[5px] rounded-full bg-yellow" />
+    <span className={`inline-flex items-center text-yellow ${className}`} role="img" aria-label="Kishore N E">
+      <svg viewBox="0 0 520 435" className="h-[25px] w-auto fill-current" aria-hidden>
+        <g transform="translate(0,435) scale(0.1,-0.1)">
+          <path d="M0 3424 c0 -512 3 -1492 7 -2178 l6 -1248 967 967 967 967 323 -331 c178 -182 326 -331 330 -331 3 0 158 149 343 331 l336 330 424 -428 c232 -235 660 -669 950 -963 290 -294 532 -536 537 -538 7 -2 10 776 10 2154 l0 2159 -102 -101 c-548 -536 -1343 -1318 -1556 -1528 l-262 -261 -334 334 -335 334 -78 -71 c-43 -39 -195 -188 -338 -331 l-260 -261 -625 622 c-344 343 -779 776 -967 963 l-343 340 0 -931z m1023 -1901 c-360 -365 -657 -663 -659 -663 -2 0 -4 595 -4 1322 l0 1323 659 -659 660 -660 -656 -663z m3824 114 l-2 -778 -652 663 -653 663 648 650 647 650 7 -535 c4 -294 7 -885 5 -1313z m-2037 742 c160 -174 190 -213 179 -223 -8 -7 -100 -96 -205 -199 l-190 -187 -156 158 c-85 86 -175 179 -198 205 l-44 48 205 205 c112 112 207 204 210 204 4 0 93 -95 199 -211z" />
+        </g>
+      </svg>
     </span>
   );
 }
@@ -23,8 +26,9 @@ export function BracketLabel({ children, className = "" }: { children: ReactNode
 
 // Underline that wipes in from the left on hover and out to the right on leave.
 export function UnderlineLink({ children, href = "#", className = "" }: { children: ReactNode; href?: string; className?: string }) {
+  const external = /^https?:/.test(href);
   return (
-    <a href={href} className={`group/ul relative inline-block overflow-hidden align-top ${className}`}>
+    <a href={href} {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})} className={`group/ul relative inline-block overflow-hidden align-top ${className}`}>
       {children}
       <span className="absolute bottom-0 left-0 h-px w-full animate-underline-out bg-current group-hover/ul:animate-underline-in" />
     </a>

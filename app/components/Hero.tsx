@@ -4,22 +4,15 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import { studio, type MediaVariant } from "@/lib/content";
+import { studio, type Visual } from "@/lib/content";
 import Media from "./Media";
 import { GlassButton, PlayPause } from "./bits";
 import { useUI } from "./ui";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
-const REEL: { variant: MediaVariant; tint?: string; mark?: string; markColor?: string }[] = [
-  { variant: "curve" },
-  { variant: "glow", mark: "lumen", markColor: "#ff6a1a" },
-  { variant: "rays" },
-  { variant: "rings", mark: "halden", markColor: "#f6e9f2" },
-  { variant: "dots", mark: "pebble", markColor: "#d8ff5a" },
-  { variant: "tiles" },
-  { variant: "wave", mark: "wayfare", markColor: "#062b14" },
-];
+// The original portfolio's hero video.
+const REEL: Visual[] = [{ variant: "curve", src: "/media/hero.mp4" }];
 
 // Cuts between scenes like an edit; pausing freezes both the cut and the scene.
 function Reel({ paused, interval = 2800 }: { paused: boolean; interval?: number }) {

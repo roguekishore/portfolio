@@ -7,10 +7,11 @@ import Cursor from "@/components/Cursor";
 import { TransitionProvider } from "@/components/Transition";
 import { UIProvider } from "@/components/ui";
 import Widgets from "@/components/Widgets";
+import { site } from "@/lib/content";
 
 export const metadata: Metadata = {
-  title: "Orbe — An independent brand studio",
-  description: "Front-end study of a studio site, built with placeholder content.",
+  title: site.title,
+  description: site.description,
 };
 
 export const viewport: Viewport = {

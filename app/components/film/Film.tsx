@@ -70,8 +70,12 @@ export default function Film({ id, chapter, paused = false, still = false, class
       }
     };
 
-    const frozen = () => still || reduce.matches;
-    const paint = () => draw(frozen() ? stillTime() : timeAt(elapsed));
+    // Verification hook: `?film-t=<seconds>` freezes every film at that time.
+    const forcedRaw = new URLSearchParams(window.location.search).get("film-t");
+    const forced = forcedRaw !== null && Number.isFinite(Number(forcedRaw)) ? ((Number(forcedRaw) % film.loop) + film.loop) % film.loop : null;
+
+    const frozen = () => still || reduce.matches || forced !== null;
+    const paint = () => draw(forced !== null ? { t: forced, veil: 0 } : frozen() ? stillTime() : timeAt(elapsed));
 
     const tick = (now: number) => {
       if (last !== null) elapsed += Math.min(0.1, (now - last) / 1000);

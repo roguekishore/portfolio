@@ -1,29 +1,28 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
-import type { MediaVariant } from "@/lib/content";
+import type { MediaVariant, Visual } from "@/lib/content";
+import Film from "./film/Film";
+import { FILMS } from "./film";
 import MediaVideo from "./MediaVideo";
 import s from "./Media.module.css";
 
-type Props = {
-  variant: MediaVariant;
-  tint?: string;
-  mark?: string;
-  markColor?: string;
-  src?: string;
+type Props = Visual & {
   sizes?: string;
-  video?: boolean;
   paused?: boolean;
   className?: string;
 };
 
 const isVideo = (src: string) => /\.(mp4|webm)$/i.test(src);
 
-// Project imagery when `src` is set (image or looping video); otherwise an
-// abstract animated composition stands in.
-export default function Media({ variant, tint, mark, markColor = "#fff", src, sizes = "(min-width: 52.125rem) 66vw, 100vw", paused, className = "" }: Props) {
+// A project film when `film` is set; otherwise project imagery when `src` is
+// set (image or looping video); otherwise an abstract animated composition.
+export default function Media({ variant, tint, mark, markColor = "#fff", src, film, chapter, still, sizes = "(min-width: 52.125rem) 66vw, 100vw", paused, className = "" }: Props) {
+  const ground = film ? FILMS[film].ground : src ? "#141414" : (tint ?? DEFAULT_TINT[variant]);
   return (
-    <div className={`${s.root} ${className}`} data-paused={paused ? "true" : "false"} style={{ background: src ? "#141414" : (tint ?? DEFAULT_TINT[variant]) }} aria-hidden>
-      {src ? (
+    <div className={`${s.root} ${className}`} data-paused={paused ? "true" : "false"} style={{ background: ground }} aria-hidden>
+      {film ? (
+        <Film id={film} chapter={chapter} paused={paused} still={still} />
+      ) : src ? (
         isVideo(src) ? <MediaVideo src={src} paused={paused} className={s.fill} /> : <Image src={src} alt="" fill sizes={sizes} className={s.fill} draggable={false} />
       ) : (
         <Scene variant={variant} />

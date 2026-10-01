@@ -149,7 +149,13 @@ function Module({ module: m }: { module: CaseModule }) {
         </MediaFrame>
       );
     case "pair":
-      return (
+      // Wide pairs hold landscape film chapters: side by side on desktop, stacked on mobile.
+      return m.wide ? (
+        <div className="flex flex-col gap-2 md:flex-row">
+          <MediaFrame visual={m.left} className="aspect-video md:w-1/2" />
+          <MediaFrame visual={m.right} className="aspect-video md:w-1/2" />
+        </div>
+      ) : (
         <div className="flex gap-x-2">
           <MediaFrame visual={m.left} className="aspect-[4/5] w-1/2" />
           <MediaFrame visual={m.right} className="aspect-[4/5] w-1/2" />
@@ -177,7 +183,8 @@ function Module({ module: m }: { module: CaseModule }) {
   }
 }
 
-// Rounded media cell; video visuals get the play/pause ring.
+// Rounded media cell; videos and films get the play/pause ring, labelled
+// tiles a small corner tag.
 function MediaFrame({ visual, className = "", flush = false, children }: { visual: Visual; className?: string; flush?: boolean; children?: React.ReactNode }) {
   const [paused, setPaused] = useState(false);
   return (
@@ -185,7 +192,13 @@ function MediaFrame({ visual, className = "", flush = false, children }: { visua
       <div className={`absolute inset-0 overflow-hidden bg-off-black ${flush ? "md:rounded-md" : "rounded-md"}`}>
         <Media {...visual} paused={paused} />
         {children}
-        {visual.video && <PlayPause paused={paused} onToggle={() => setPaused((p) => !p)} className="absolute right-2 bottom-2 z-10" />}
+        {visual.label && (
+          // .t-label sets its own `top`, so the wrapper owns the corner position.
+          <div className="glass-strong absolute bottom-2 left-2 z-10 rounded-xs bg-black/25 px-[10px] py-[9px]">
+            <span className="t-label block text-white">{visual.label}</span>
+          </div>
+        )}
+        {(visual.video || visual.film) && <PlayPause paused={paused} onToggle={() => setPaused((p) => !p)} className="absolute right-2 bottom-2 z-10" />}
       </div>
     </div>
   );

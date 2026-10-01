@@ -40,8 +40,24 @@ export const channels: Link[] = [
   { label: "LeetCode", href: "https://leetcode.com/u/the-maverick/" },
 ];
 
+// Animated project films (components/film). A film takes precedence over `src`.
+export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert";
+
 // Shared media shape for cards, heroes, thumbnails and case-study modules.
-export type Visual = { variant: MediaVariant; tint?: string; mark?: string; markColor?: string; video?: boolean; src?: string };
+// `chapter` loops one chapter of a film; `still` draws a single frame;
+// `label` is a small corner tag on case-study tiles.
+export type Visual = {
+  variant: MediaVariant;
+  tint?: string;
+  mark?: string;
+  markColor?: string;
+  video?: boolean;
+  src?: string;
+  film?: FilmId;
+  chapter?: number;
+  still?: boolean;
+  label?: string;
+};
 
 export type Project = {
   slug: string;
@@ -55,10 +71,14 @@ export type Project = {
   mark?: string;
   markColor?: string;
   src: string;
+  film?: FilmId;
   liveUrl: string;
   githubUrl: string;
   stack: string[];
 };
+
+// The visual a project shows wherever it appears as a card or thumbnail.
+export const visualOf = (p: Project, extra: Partial<Visual> = {}): Visual => ({ variant: p.media, src: p.src, film: p.film, ...extra });
 
 const M = "/media";
 
@@ -74,6 +94,7 @@ export const allProjects: Project[] = [
     media: "dots",
     tint: "#141414",
     src: `${M}/vantage.png`,
+    film: "vantage",
     liveUrl: "https://vantagecode.tech/",
     githubUrl: "https://github.com/roguekishore/Vantage",
     stack: ["React", "Spring Boot", "MySQL", "AWS", "Docker", "Java", "JavaScript", "Tailwind", "Claude"],
@@ -89,6 +110,7 @@ export const allProjects: Project[] = [
     media: "rings",
     tint: "#141414",
     src: `${M}/argus.png`,
+    film: "argus",
     liveUrl: "https://argusweb.tech/",
     githubUrl: "https://github.com/roguekishore/Argus",
     stack: ["React", "Spring Boot", "MySQL", "AWS", "Docker", "Java", "JavaScript", "CSS", "Gemini"],
@@ -104,6 +126,7 @@ export const allProjects: Project[] = [
     media: "glow",
     tint: "#141414",
     src: `${M}/truenorth.jpeg`,
+    film: "truenorth",
     liveUrl: "https://thetruenorth.app/",
     githubUrl: "https://github.com/roguekishore/True-North",
     stack: ["React", "Firebase", "JavaScript", "CSS"],
@@ -119,6 +142,7 @@ export const allProjects: Project[] = [
     media: "tiles",
     tint: "#141414",
     src: `${M}/spicerack.jpeg`,
+    film: "spicerack",
     liveUrl: "https://spicerack.netlify.app/",
     githubUrl: "https://github.com/roguekishore/SpiceRack",
     stack: ["React", "Spring Boot", "MySQL", "AWS", "Docker", "Java", "JavaScript", "CSS"],
@@ -134,6 +158,7 @@ export const allProjects: Project[] = [
     media: "rays",
     tint: "#141414",
     src: `${M}/truxpert.jpeg`,
+    film: "truxpert",
     liveUrl: "https://truxpert.app/",
     githubUrl: "https://github.com/roguekishore/Truxpert",
     stack: ["React", "Spring Boot", "MySQL", "AWS", "Docker", "Java", "JavaScript", "CSS"],
@@ -279,7 +304,7 @@ export const offices = [
 export const helloVisual: Visual = { variant: "tiles", src: `${M}/brand.png` };
 
 // Photo stack in the widgets drawer.
-export const drawerPhotos: Visual[] = allProjects.slice(0, 4).map((p) => ({ variant: p.media, src: p.src }));
+export const drawerPhotos: Visual[] = allProjects.slice(0, 4).map((p) => visualOf(p));
 
 export const legal: string[] = [];
 export const copyright = `© 2024—2026 ${person.name}`;
@@ -290,7 +315,7 @@ export const copyright = `© 2024—2026 ${person.name}`;
 export type CaseModule =
   | { type: "chapter"; id: string; label: string; heading?: string; body: string[]; links?: Link[] }
   | { type: "media"; visual: Visual; caption?: string }
-  | { type: "pair"; left: Visual; right: Visual }
+  | { type: "pair"; left: Visual; right: Visual; wide?: boolean }
   | { type: "quote"; text: string; name: string; role: string };
 
 export type CaseStudy = {
@@ -327,7 +352,7 @@ const techCategories = [
 
 export const categories: { slug: string; name: string; thumb: Visual }[] = techCategories.map((c) => {
   const p = allProjects.find((x) => x.slug === c.thumb)!;
-  return { slug: c.slug, name: c.name, thumb: { variant: p.media, src: p.src } };
+  return { slug: c.slug, name: c.name, thumb: visualOf(p, { still: true }) };
 });
 
 export const projectCategories: Record<string, string[]> = Object.fromEntries(
@@ -344,15 +369,35 @@ function hostname(url: string) {
   }
 }
 
+// Film projects show their film as the hero and one looping tile per chapter:
+// one wide frame, then two pairs.
+function filmModules(p: Project, labels: string[]): CaseModule[] {
+  const tile = (i: number): Visual => ({ variant: p.media, film: p.film, chapter: i, label: `${String(i + 1).padStart(2, "0")} ${labels[i]}` });
+  return [
+    { type: "media", visual: tile(0) },
+    { type: "pair", wide: true, left: tile(1), right: tile(2) },
+    { type: "pair", wide: true, left: tile(3), right: tile(4) },
+  ];
+}
+
+// Chapter names of each film, in order (kept in sync with components/film).
+const FILM_CHAPTERS: Record<FilmId, string[]> = {
+  vantage: ["Visualize", "Structure", "Battle", "Rank", "Conquer"],
+  argus: ["Report", "Classify", "Resolve", "Escalate", "Verify"],
+  truenorth: ["Journal", "Track", "Analyze", "Habits", "True north"],
+  spicerack: ["Shop", "Pantry", "Recipes", "Plan", "Order"],
+  truxpert: ["Register", "Apply", "Review", "Inspect", "Serve"],
+};
+
 // Every case study: overview from the original description, then the stack and
-// links. Projects with extra screenshots get them as media modules.
+// links. Film projects lead with their chapters; others keep their screenshots.
 function caseFor(p: Project, extra: CaseModule[] = []): CaseStudy {
-  const video = /\.(mp4|webm)$/i.test(p.src);
+  const video = !p.film && /\.(mp4|webm)$/i.test(p.src);
   return {
     intro: { heading: p.title, body: [p.description] },
-    hero: { variant: p.media, src: p.src, video },
+    hero: p.film ? { variant: p.media, film: p.film } : { variant: p.media, src: p.src, video },
     modules: [
-      ...extra,
+      ...(p.film ? filmModules(p, FILM_CHAPTERS[p.film]) : extra),
       { type: "chapter", id: "stack", label: "Stack", body: [p.stack.join(", ") + "."] },
       {
         type: "chapter",
@@ -370,16 +415,8 @@ function caseFor(p: Project, extra: CaseModule[] = []): CaseStudy {
 
 export const caseStudies: Record<string, CaseStudy> = Object.fromEntries(
   allProjects.map((p) => {
+    // Screenshot galleries for projects without a film.
     const extra: Record<string, CaseModule[]> = {
-      "true-north": [
-        { type: "media", visual: img(`${M}/truenorth-site.png`) },
-        { type: "pair", left: img(`${M}/truenorth-1.png`), right: img(`${M}/truenorth-2.png`) },
-        { type: "media", visual: img(`${M}/truenorth-3.png`) },
-        { type: "pair", left: img(`${M}/truenorth-4.png`), right: img(`${M}/truenorth-5.png`) },
-        { type: "media", visual: img(`${M}/truenorth-6.png`) },
-        { type: "pair", left: img(`${M}/truenorth-7.png`), right: img(`${M}/truenorth-journal.png`) },
-      ],
-      spicerack: [{ type: "media", visual: img(`${M}/spicerack-site.png`) }],
       "st-josephs": [{ type: "media", visual: img(`${M}/stjosephs-site.png`) }],
     };
     return [p.slug, caseFor(p, extra[p.slug])];

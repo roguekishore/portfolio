@@ -126,7 +126,7 @@ function Meta({ project, shown }: { project: Project; shown: boolean }) {
   return (
     <div className={`absolute bottom-0 left-0 flex items-center gap-x-4 transition-opacity duration-[167ms] ease-linear ${shown ? "opacity-100 delay-[333ms]" : "opacity-0 delay-0"}`}>
       <div className="relative h-10 w-10 overflow-hidden rounded-xs bg-off-black">
-        <Media variant={project.media} tint={project.tint} src={project.src} sizes="80px" />
+        <Media variant={project.media} tint={project.tint} src={project.src} film={project.film} still sizes="80px" />
       </div>
       <div className="flex flex-col gap-y-[7px]">
         <p className="t-small text-white">{project.title}</p>
@@ -148,7 +148,7 @@ function Card({ project, active }: { project: Project; active: boolean }) {
         className={`flex flex-col gap-y-3 transition-opacity duration-[167ms] ease-linear md:cursor-none ${active ? "md:opacity-100" : "md:opacity-20"}`}
       >
         <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-off-black sm:aspect-video">
-          <Media variant={project.media} tint={project.tint} mark={project.mark} markColor={project.markColor} src={project.src} paused={paused} />
+          <Media variant={project.media} tint={project.tint} mark={project.mark} markColor={project.markColor} src={project.src} film={project.film} paused={paused} />
           <PlayPause paused={paused} onToggle={() => setPaused((p) => !p)} className="absolute right-2 bottom-2 z-10" />
         </div>
         <div className="flex items-start justify-between md:hidden">

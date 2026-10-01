@@ -41,7 +41,7 @@ export const channels: Link[] = [
 ];
 
 // Animated project films (components/film). A film takes precedence over `src`.
-export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert";
+export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert" | "saga";
 
 // Shared media shape for cards, heroes, thumbnails and case-study modules.
 // `chapter` loops one chapter of a film; `still` draws a single frame;
@@ -237,6 +237,22 @@ export const allProjects: Project[] = [
     githubUrl: "https://github.com/roguekishore/Portfolio",
     stack: ["React", "JavaScript", "Tailwind", "CSS"],
   },
+  {
+    slug: "saga",
+    client: "SAGA",
+    title: "AI Traffic Observability",
+    year: "2026",
+    sector: "Developer tools",
+    description:
+      "A local-first reverse proxy that sits in front of any AI gateway, tees every request into SQLite with secrets scrubbed, and replays it live in a React dashboard.",
+    media: "dots",
+    tint: "#141414",
+    src: "",
+    film: "saga",
+    liveUrl: "",
+    githubUrl: "https://github.com/roguekishore/Saga",
+    stack: ["React", "TypeScript", "Bun", "SQLite", "Tailwind"],
+  },
 ];
 
 // Homepage "Our work" shows the first five.
@@ -387,6 +403,7 @@ const FILM_CHAPTERS: Record<FilmId, string[]> = {
   truenorth: ["Journal", "Track", "Analyze", "Habits", "True north"],
   spicerack: ["Shop", "Pantry", "Recipes", "Plan", "Order"],
   truxpert: ["Register", "Apply", "Review", "Inspect", "Serve"],
+  saga: ["Forward", "Redact", "Classify", "Replay", "Retain"],
 };
 
 // Every case study: overview from the original description, then the stack and
@@ -405,7 +422,8 @@ function caseFor(p: Project, extra: CaseModule[] = []): CaseStudy {
         label: "Links",
         body: [],
         links: [
-          { label: `Live — ${hostname(p.liveUrl)}`, href: p.liveUrl },
+          // Local-only tools (no deployment) leave liveUrl empty and show just the source.
+          ...(p.liveUrl ? [{ label: `Live — ${hostname(p.liveUrl)}`, href: p.liveUrl }] : []),
           { label: "Source on GitHub", href: p.githubUrl },
         ],
       },

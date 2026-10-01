@@ -1,0 +1,16 @@
+{
+  "name": "site-capture-tools",
+  "private": true,
+  "type": "module",
+  "description": "Playwright capture + visual-diff harness for the koto.com recreation",
+  "scripts": {
+    "capture": "node capture.mjs",
+    "compare": "node compare.mjs",
+    "crop": "node crop.mjs"
+  },
+  "dependencies": {
+    "pixelmatch": "^7.1.0",
+    "playwright": "1.63.0",
+    "pngjs": "^7.0.0"
+  }
+}

@@ -2,6 +2,9 @@
 // Images and videos live in /public/media. Abstract `variant`s remain as the
 // fallback for slots the original has no imagery for.
 
+import { FILMS } from "@/components/film";
+import { COPY, type CopySection } from "./copy";
+
 export type MediaVariant = "rings" | "rays" | "glow" | "dots" | "wave" | "curve" | "tiles" | "dusk";
 
 export type Link = { label: string; href: string };
@@ -41,7 +44,7 @@ export const channels: Link[] = [
 ];
 
 // Animated project films (components/film). A film takes precedence over `src`.
-export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert" | "saga" | "quant" | "conduit";
+export type FilmId = "repohive" | "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert" | "readify" | "saga" | "quant" | "conduit" | "prospector";
 
 // Shared media shape for cards, heroes, thumbnails and case-study modules.
 // `chapter` loops one chapter of a film; `still` draws a single frame;
@@ -82,8 +85,25 @@ export const visualOf = (p: Project, extra: Partial<Visual> = {}): Visual => ({ 
 
 const M = "/media";
 
-// Index order (and therefore "next project" order), as in the original.
-export const allProjects: Project[] = [
+// Index order (and therefore "next project" order), as in the original, with
+// RepoHIVE leading and Prospector closing. Text fields of projects that have a
+// copy file are overridden below.
+const baseProjects: Project[] = [
+  {
+    slug: "repohive",
+    client: "RepoHIVE",
+    title: "RepoHIVE",
+    year: "2026",
+    sector: "Developer tools",
+    description: "RepoHIVE.",
+    media: "dots",
+    tint: "#141414",
+    src: "",
+    film: "repohive",
+    liveUrl: "",
+    githubUrl: "https://github.com/roguekishore/RepoHIVE",
+    stack: [],
+  },
   {
     slug: "vantage",
     client: "Vantage",
@@ -174,6 +194,7 @@ export const allProjects: Project[] = [
     media: "dusk",
     tint: "#141414",
     src: `${M}/readify.mp4`,
+    film: "readify",
     liveUrl: "https://readifystore.netlify.app/",
     githubUrl: "https://github.com/roguekishore/eBook-Store",
     stack: ["React", "JavaScript", "CSS"],
@@ -285,7 +306,29 @@ export const allProjects: Project[] = [
     githubUrl: "https://github.com/roguekishore/Kiro-Conduit",
     stack: ["Python", "FastAPI", "AWS"],
   },
+  {
+    slug: "prospector",
+    client: "Prospector",
+    title: "Prospector",
+    year: "2026",
+    sector: "Developer tools",
+    description: "Prospector.",
+    media: "dots",
+    tint: "#141414",
+    src: "",
+    film: "prospector",
+    liveUrl: "",
+    githubUrl: "https://github.com/roguekishore/Prospector",
+    stack: [],
+  },
 ];
+
+// Copy files (lib/copy) own the card text of every project that has one; the
+// base entries keep the media, links and film wiring.
+export const allProjects: Project[] = baseProjects.map((p) => {
+  const c = COPY[p.slug];
+  return c ? { ...p, title: c.title, sector: c.sector, year: c.year, description: c.description, stack: c.stack } : p;
+});
 
 // Homepage "Our work" shows the first five.
 export const projects: Project[] = allProjects.slice(0, 5);
@@ -418,38 +461,54 @@ function hostname(url: string) {
 }
 
 // Film projects show their film as the hero and one looping tile per chapter:
-// one wide frame, then two pairs.
-function filmModules(p: Project, labels: string[]): CaseModule[] {
+// tile 0 wide, then pairs, and a trailing odd tile wide again. Each placed
+// module carries the index of the last tile it holds, so copy sections can be
+// slotted after the chapter they explain.
+type Placed = { last: number; module: CaseModule };
+
+function filmModules(p: Project, labels: string[]): Placed[] {
   const tile = (i: number): Visual => ({ variant: p.media, film: p.film, chapter: i, label: `${String(i + 1).padStart(2, "0")} ${labels[i]}` });
-  return [
-    { type: "media", visual: tile(0) },
-    { type: "pair", wide: true, left: tile(1), right: tile(2) },
-    { type: "pair", wide: true, left: tile(3), right: tile(4) },
-  ];
+  const out: Placed[] = [{ last: 0, module: { type: "media", visual: tile(0) } }];
+  for (let i = 1; i < labels.length; i += 2)
+    out.push(i + 1 < labels.length
+      ? { last: i + 1, module: { type: "pair", wide: true, left: tile(i), right: tile(i + 1) } }
+      : { last: i, module: { type: "media", visual: tile(i) } });
+  return out;
 }
 
-// Chapter names of each film, in order (kept in sync with components/film).
-const FILM_CHAPTERS: Record<FilmId, string[]> = {
-  vantage: ["Visualize", "Structure", "Battle", "Rank", "Conquer"],
-  argus: ["Report", "Classify", "Resolve", "Escalate", "Verify"],
-  truenorth: ["Journal", "Track", "Analyze", "Habits", "True north"],
-  spicerack: ["Shop", "Pantry", "Recipes", "Plan", "Order"],
-  truxpert: ["Register", "Apply", "Review", "Inspect", "Serve"],
-  saga: ["Forward", "Redact", "Classify", "Replay", "Retain"],
-  quant: ["Collect", "Reconstruct", "Calendar", "Session", "Drawdown"],
-  conduit: ["Translate", "Frame", "Dispatch", "Meter", "Tee"],
-};
+const sectionModule = (s: CopySection): CaseModule => ({ type: "chapter", id: s.id, label: s.label, heading: s.heading, body: s.body, links: s.links });
 
-// Every case study: overview from the original description, then the stack and
-// links. Film projects lead with their chapters; others keep their screenshots.
+// Every case study: the intro from the copy file (else the card text), the
+// modules, then the stack and links. Film projects lead with their chapter
+// tiles (labels come from the film itself) and place each copy section right
+// after the tile holding the chapter it follows (`after`); sections without
+// one come after the last tile. Other projects keep their screenshots, then
+// their sections.
 function caseFor(p: Project, extra: CaseModule[] = []): CaseStudy {
+  const copy = COPY[p.slug];
+  const sections = copy?.sections ?? [];
   const video = !p.film && /\.(mp4|webm)$/i.test(p.src);
+  const modules: CaseModule[] = [];
+  if (p.film) {
+    const placed = filmModules(p, FILMS[p.film].chapters.map((c) => c.label));
+    const lastTile = placed[placed.length - 1].last;
+    const at = (sec: CopySection) => (sec.after === undefined ? Infinity : Math.max(0, sec.after));
+    let prev = -1;
+    for (const { last, module } of placed) {
+      modules.push(module);
+      for (const sec of sections) if (at(sec) > prev && at(sec) <= last) modules.push(sectionModule(sec));
+      prev = last;
+    }
+    for (const sec of sections) if (at(sec) > lastTile) modules.push(sectionModule(sec));
+  } else {
+    modules.push(...extra, ...sections.map(sectionModule));
+  }
   return {
-    intro: { heading: p.title, body: [p.description] },
+    intro: copy?.intro ?? { heading: p.title, body: [p.description] },
     hero: p.film ? { variant: p.media, film: p.film } : { variant: p.media, src: p.src, video },
     modules: [
-      ...(p.film ? filmModules(p, FILM_CHAPTERS[p.film]) : extra),
-      { type: "chapter", id: "stack", label: "Stack", body: [p.stack.join(", ") + "."] },
+      ...modules,
+      { type: "chapter", id: "stack", label: "Stack", body: p.stack.length ? [p.stack.join(", ") + "."] : [] },
       {
         type: "chapter",
         id: "links",

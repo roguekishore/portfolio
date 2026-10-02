@@ -41,7 +41,7 @@ export const channels: Link[] = [
 ];
 
 // Animated project films (components/film). A film takes precedence over `src`.
-export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert" | "saga";
+export type FilmId = "vantage" | "argus" | "truenorth" | "spicerack" | "truxpert" | "saga" | "quant" | "conduit";
 
 // Shared media shape for cards, heroes, thumbnails and case-study modules.
 // `chapter` loops one chapter of a film; `still` draws a single frame;
@@ -253,6 +253,38 @@ export const allProjects: Project[] = [
     githubUrl: "https://github.com/roguekishore/Saga",
     stack: ["React", "TypeScript", "Bun", "SQLite", "Tailwind"],
   },
+  {
+    slug: "quant",
+    client: "QUANT",
+    title: "MT5 Trading Analytics",
+    year: "2026",
+    sector: "Fintech",
+    description:
+      "A self-hosted, read-only analytics service for a MetaTrader 5 account. It rebuilds round-turn trades from raw broker deals, buckets them by calendar day, and serves them to a calendar-first dashboard.",
+    media: "tiles",
+    tint: "#141414",
+    src: "",
+    film: "quant",
+    liveUrl: "",
+    githubUrl: "https://github.com/roguekishore/Quant",
+    stack: ["Python", "FastAPI", "SQLite", "Next.js", "React", "TypeScript", "Tailwind", "Docker", "Terraform"],
+  },
+  {
+    slug: "conduit",
+    client: "CONDUIT",
+    title: "Translating AI Gateway",
+    year: "2026",
+    sector: "Developer tools",
+    description:
+      "A gateway that lets Claude Code and Codex CLI run on the Kiro backend. It dispatches the AWS event stream by header to capture real tokens, credits and reasoning, and tees every rewrite to SAGA.",
+    media: "rays",
+    tint: "#141414",
+    src: "",
+    film: "conduit",
+    liveUrl: "",
+    githubUrl: "https://github.com/roguekishore/Kiro-Conduit",
+    stack: ["Python", "FastAPI", "AWS"],
+  },
 ];
 
 // Homepage "Our work" shows the first five.
@@ -404,6 +436,8 @@ const FILM_CHAPTERS: Record<FilmId, string[]> = {
   spicerack: ["Shop", "Pantry", "Recipes", "Plan", "Order"],
   truxpert: ["Register", "Apply", "Review", "Inspect", "Serve"],
   saga: ["Forward", "Redact", "Classify", "Replay", "Retain"],
+  quant: ["Collect", "Reconstruct", "Calendar", "Session", "Drawdown"],
+  conduit: ["Translate", "Frame", "Dispatch", "Meter", "Tee"],
 };
 
 // Every case study: overview from the original description, then the stack and

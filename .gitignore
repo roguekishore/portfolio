@@ -2,3 +2,5 @@ node_modules/
 reference/
 local/
 compare/
+brag-output/
+.kiro/skills/brag-slim

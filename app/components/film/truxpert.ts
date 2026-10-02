@@ -40,14 +40,24 @@ const HEADS = [2, 3, 3]; // admins, reviewers, inspectors in USERS_DATA
 const CAB = 0.6, CAB_H = 0.72, WHEEL = 0.21, GAP = 5;
 
 // fleet (chapter 0)
-const V0 = { x: 420, y: 520, r: 54 }; // vendor at t = 0
-const V1 = { x: 210, y: 300, r: 34 }; // vendor during the pipeline
-const BX = 720, BY = [340, 700], BR = 32;
-const TREE_X = 1040, TREE_DY = 120;
+const V0 = { x: 520, y: 540, r: 62 }; // vendor at t = 0
+const V1 = { x: 190, y: 250, r: 40 }; // vendor during the pipeline
+const BX = 800, BY = [350, 700], BR = 32;
+const TREE_X = 1120, TREE_DY = 112;
 const brandOf = (k: number) => (k < 3 ? 0 : 1);
 const treeY = (k: number) => BY[brandOf(k)] + ((k % 3) - 1) * TREE_DY;
-const TREE_W = 124, TREE_H = 70;
+const TREE_W = 112, TREE_H = 64;
 const treeLeft = TREE_X - (TREE_W + GAP + TREE_H * CAB) / 2;
+const TREE_F = TREE_W + GAP + TREE_H * CAB;
+const LOT_BRACKET_X = treeLeft - 26;
+// vendor status board: 2 brand rows × 3 trucks, mirrors FoodTruck.applicationStatus (the vendor's truck cards)
+const PIP_R = 9, PIP_DX = 34;
+const PIP_X = (k: number) => V1.x + 68 + (k % 3) * PIP_DX;
+const PIP_Y = (k: number) => V1.y - PIP_DX / 2 + brandOf(k) * PIP_DX;
+
+// permanent stage: the permit office around the staff rail and the street along the bottom
+const OFFICE = { x: 590, y: 104, w: 440, h: 108 };
+const STREET_Y = 876;
 
 // queue (chapters 1–3)
 const QX = (k: number) => 440 + k * 180;
@@ -63,11 +73,15 @@ const RAIL_Y = 150, ROLE_X = [700, 800, 900];
 const LX = (i: number) => 420 + i * 280;
 const LOT_Y = 600, LOT_W = 136, LOT_H = 76, LOT_LANE = 440;
 const LOT_LINE = LOT_Y + LOT_H / 2 + LOT_H * WHEEL + 3;
-const SIDE = [{ x: 1380, y: 330 }, { x: 1380, y: 430 }]; // T2 (rejected), T5 (still queued)
+const SIDE = [{ x: 1400, y: 180 }, { x: 1400, y: 290 }]; // T2 (rejected), T5 (still queued)
+const SIDE_W = 84, SIDE_H = 48;
+// the inspector's checklist panel in the upper band: one slot per approved truck
+const PANEL_Y = 310, PANEL_W = 150, PANEL_H = 72;
 
 // road (chapter 5)
-const ROAD_Y = 790;
-const RX = (s: number) => 360 + s * 400;
+const ROAD_Y = STREET_Y;
+const RX = (s: number) => 340 + s * 420;
+const MENU_GAP = 140, MENU_W = 190, PITCH = 34; // tall menu signs on poles, reaching into the upper band
 const ROAD_TRUCK_Y = ROAD_Y - LOT_H / 2 - LOT_H * WHEEL - 3;
 
 // board (chapter 6)
@@ -98,7 +112,7 @@ const tDia = (i: number) => tBadgeD(i) + BADGE_FLY;
 const tVisit = (i: number) => 48.4 + i * 1.25;
 const tMark = (i: number) => tVisit(i) + 0.6;
 const tMenu = (s: number) => 56.8 + s * 0.35;
-const ORDER_FLY = 0.45;
+const ORDER_FLY = 0.6;
 const T_ARC_RING = 67.6, T_ARC_SWEEP = 68.6, T_ARC_DONE = 70.4;
 const T_HEADS = 68.2, T_HEADS_BACK = 76.2;
 
@@ -122,7 +136,7 @@ const seeded = (seed: number) => {
   };
 };
 const rnd = seeded(7);
-const PILL_WIDTHS = MENU_N.map((n) => [...Array(n).keys()].map(() => 56 + Math.floor(rnd() * 48)));
+const PILL_WIDTHS = MENU_N.map((n) => [...Array(n).keys()].map(() => 72 + Math.floor(rnd() * 64)));
 
 /* ───────────────────────────── easing and paths ───────────────────────────── */
 /** Damped overshoot: fast rise, +8 % at 0.3, settled by 1. */
@@ -169,13 +183,13 @@ type S = {
   body: RGB; tk: number; pop: number; rot: number;
   card: number; cardC: RGB; cpop: number; docs: number; scan: number; sink: number;
   ring: number; ringC: RGB; dia: number; diaC: RGB;
-  barA: number; bar: number; barC: RGB; mark: number; markKind: number;
+  barA: number; bar: number; barC: RGB; mark: number; markKind: number; halo: number;
   menu: number; menuN: number;
 };
 const BASE: S = {
   x: 0, y: 0, w: 0, h: 0, r: 0, a: 1, body: C_SUB, tk: 1, pop: 1, rot: 0,
   card: 0, cardC: C_SUB, cpop: 1, docs: 0, scan: 0, sink: 0,
-  ring: 0, ringC: C_PROG, dia: 0, diaC: C_PROG, barA: 0, bar: 0, barC: C_PROG, mark: 0, markKind: 1, menu: 0, menuN: 0,
+  ring: 0, ringC: C_PROG, dia: 0, diaC: C_PROG, barA: 0, bar: 0, barC: C_PROG, mark: 0, markKind: 1, halo: 0, menu: 0, menuN: 0,
 };
 const S0 = (o: Partial<S>): S => ({ ...BASE, ...o });
 
@@ -228,7 +242,7 @@ function roleReview(k: number, t: number): S {
 function roleInspect(k: number, t: number): S {
   if (k === REJ || k === QUEUED) {
     const p = SIDE[k === REJ ? 0 : 1];
-    return S0({ x: p.x, y: p.y, w: 70, h: 40, r: 9, body: k === REJ ? C_BAD : C_SUB, a: k === REJ ? 0.85 : 1, ring: k === REJ ? 1 : 0, ringC: C_BAD });
+    return S0({ x: p.x, y: p.y, w: SIDE_W, h: SIDE_H, r: 10, body: k === REJ ? C_BAD : C_SUB, a: k === REJ ? 0.9 : 1, ring: k === REJ ? 1 : 0, ringC: C_BAD, halo: k === REJ ? 1 : 0 });
   }
   const i = bayOf(k), td = tDia(i), tv = tVisit(i), tm = tMark(i);
   const res = k === FAILED ? C_BAD : C_OK;
@@ -238,6 +252,7 @@ function roleInspect(k: number, t: number): S {
     dia: seg(t, td, td + 0.35), diaC: mix(C_PROG, res, got),
     barA: seg(t, td + 0.1, td + 0.4), bar: easeOutCubic(seg(t, tv, tv + 0.5)), barC: mix(C_PROG, res, got),
     mark: seg(t, tm, tm + 0.35), markKind: k === FAILED ? -1 : 1,
+    halo: k === FAILED ? easeOutCubic(seg(t, tm, tm + 0.45)) : 0,
     pop: 1 + 0.1 * bump(t, tm, tm + 0.35),
   });
 }
@@ -302,7 +317,7 @@ function blend(A: S, B: S, u: number, k: number): S {
     sink: lerp(A.sink, B.sink, pc),
     ring: lerp(A.ring, B.ring, pc), ringC: mix(A.ringC, B.ringC, pc), dia: lerp(A.dia, B.dia, pc), diaC: mix(A.diaC, B.diaC, pc),
     barA: att(A.barA, B.barA), bar: att(A.bar, B.bar), barC: mix(A.barC, B.barC, pc),
-    mark: att(A.mark, B.mark), markKind: A.mark > 0 ? A.markKind : B.markKind,
+    mark: att(A.mark, B.mark), markKind: A.mark > 0 ? A.markKind : B.markKind, halo: lerp(A.halo, B.halo, pc),
     menu: att(A.menu, B.menu), menuN: A.menu > 0 ? A.menuN : B.menuN,
   };
 }
@@ -369,6 +384,11 @@ function vendorAt(t: number): { x: number; y: number; r: number } {
     const ta = T_END + k * 0.05 + 1.0;
     pop += 0.05 * bump(t, ta, ta + 0.25);
   }
+  // the vendor "sees" each status mirror land on its board
+  for (let i = 0; i < PULSES.length; i++) {
+    const ta = PULSES[i].t0 + PULSE_FLY;
+    pop += 0.04 * bump(t, ta, ta + 0.3);
+  }
   return { x: pos.x, y: pos.y + breathe(t, 0.4, 1.2), r: r * pop };
 }
 function brandAt(b: number, t: number, v: { x: number; y: number }): { x: number; y: number; r: number; a: number } {
@@ -407,11 +427,11 @@ function geom(s: S): G {
     winX: cabX + cabW * 0.6, winY: bot - cabH * 0.66,
   };
 }
-const menuH = (n: number) => 30 + n * 24;
+const menuH = (n: number) => 24 + n * PITCH;
 function pillPos(s: S, g: G, j: number): P {
   const H = menuH(s.menuN) * s.menu;
-  const bottom = g.top - 14, topY = bottom - H;
-  return { x: s.x, y: topY + 16 + (j + 0.5) * 24 * s.menu };
+  const bottom = g.top - MENU_GAP, topY = bottom - H;
+  return { x: s.x, y: topY + (30 + j * PITCH) * s.menu };
 }
 const slotY = (g: G, j: number) => g.cardY0 + (62 + j * 32) * (g.cardH / CARD_H);
 
@@ -436,7 +456,7 @@ const RIPPLES: Rip[] = [
 type Cam = { s: number; x: number; y: number };
 function cam(t: number): Cam {
   const z1 = easeSine(seg(t, 0.4, 5.0)) * (1 - easeSine(seg(t, 6.8, 9.6)));
-  if (z1 > 0) return { s: 1 + 0.06 * z1, x: 760, y: 520 };
+  if (z1 > 0) return { s: 1 + 0.06 * z1, x: 840, y: 540 };
   const z2 = easeSine(seg(t, 31.6, 33.6)) * (1 - easeSine(seg(t, 39.6, 41.7)));
   if (z2 > 0) return { s: 1 + 0.08 * z2, x: roleAt(1, t).x, y: 580 };
   return { s: 1, x: CX, y: 500 };
@@ -510,6 +530,86 @@ function drawTree(p: Painter, t: number, v: { x: number; y: number }, brands: { 
   }
 }
 
+/** Permanent stage, identical at every t: the permit office around the staff rail and the street. */
+function drawStage(p: Painter) {
+  p.rstroke(OFFICE.x, OFFICE.y, OFFICE.w, OFFICE.h, 28, LOCK, 2, 0.8);
+  p.line(160, STREET_Y, 1440, STREET_Y, LOCK, 2, 0.8);
+}
+
+/** The vendor's lot: a bracket with six empty bays the fleet unfolds into (Fleet only; back for the loop). */
+function drawLotBracket(p: Painter, t: number) {
+  const a = clamp01(1 - seg(t, T_APPLY, T_APPLY + 0.7) + seg(t, T_END + 0.5, T_END + 1.3));
+  if (a <= 0) return;
+  p.line(LOT_BRACKET_X, treeY(0) - 44, LOT_BRACKET_X, treeY(5) + 56, LOCK, 2, 0.8 * a);
+  for (let k = 0; k < N; k++) {
+    const y = treeY(k) + TREE_H / 2 + TREE_H * WHEEL + 5;
+    p.line(LOT_BRACKET_X, y, treeLeft + TREE_F + 6, y, LOCK, 2, 0.8 * a);
+  }
+  // brand sockets: the two slots the brand nodes unfold into
+  for (let b = 0; b < 2; b++) ringMark(p, BX, BY[b], BR + 7, LOCK, 2, 0.8 * a);
+}
+
+/** The vendor's truck cards: one pip per truck in brand rows, coloured by the mirrored application status. */
+function drawVendorBoard(p: Painter, t: number, v: { x: number; y: number }) {
+  const e0 = easeOutCubic(seg(t, T_APPLY + 0.9, T_APPLY + 1.6));
+  if (e0 <= 0) return;
+  const back0 = easeCubic(seg(t, T_END + 0.15, T_END + 0.85));
+  const fa = e0 * (1 - back0);
+  if (fa > 0) {
+    const x0 = PIP_X(0) - PIP_DX / 2 - 8, y0 = PIP_Y(0) - PIP_DX / 2 - 8;
+    p.rstroke(x0, y0, 3 * PIP_DX + 16, 2 * PIP_DX + 16, 14, EDGE, 2, fa);
+  }
+  for (let k = 0; k < N; k++) {
+    const e = easeOutCubic(seg(t, T_APPLY + 0.9 + k * 0.06, T_APPLY + 1.6 + k * 0.06));
+    if (e <= 0) continue;
+    const back = easeCubic(seg(t, T_END + 0.15 + k * 0.05, T_END + 0.85 + k * 0.05));
+    const col = stateOf(k, t).body;
+    let q: P, r: number, a: number;
+    if (back > 0) {
+      q = arcPos(PIP_X(k), PIP_Y(k), v.x, v.y, back, k % 2 ? 40 : -40);
+      r = PIP_R * (1 - back);
+      a = 1 - seg(back, 0.6, 1);
+    } else {
+      q = arcPos(V1.x, V1.y, PIP_X(k), PIP_Y(k), e, k % 2 ? 30 : -30);
+      r = PIP_R * boing(e);
+      a = seg(e, 0, 0.2);
+    }
+    if (r <= 0.3 || a <= 0) continue;
+    p.disc(q.x, q.y, r + 3, GROUND, a);
+    p.disc(q.x, q.y, r, col, a);
+  }
+  // each status pulse that lands on a truck echoes on its pip: the vendor sees the mirror
+  for (let i = 0; i < PULSES.length; i++) {
+    const e = PULSES[i], q = seg(t, e.t0 + PULSE_FLY, e.t0 + PULSE_FLY + 0.6);
+    if (q <= 0 || q >= 1) continue;
+    ringMark(p, PIP_X(e.k), PIP_Y(e.k), PIP_R + 16 * easeOutCubic(q), e.col, 2.5, 0.9 * (1 - q));
+  }
+}
+
+/** The inspector's checklist panel: a slot per approved truck with its diamond, checklist bar and result fill. */
+function drawPanel(p: Painter, t: number) {
+  const a = seg(t, T_INSPECT + 0.4, T_INSPECT + 1.2) * (1 - seg(t, T_SERVE + 0.2, T_SERVE + 1.0));
+  if (a <= 0) return;
+  for (let i = 0; i < APPROVED.length; i++) {
+    const grow = easeOutCubic(seg(t, T_INSPECT + 0.6 + i * 0.08, T_INSPECT + 1.3 + i * 0.08));
+    if (grow <= 0) continue;
+    const s = stateOf(APPROVED[i], t);
+    const w = PANEL_W * grow, h = PANEL_H * grow, x = LX(i) - w / 2, y = PANEL_Y - h / 2;
+    if (s.mark > 0.01) p.rrect(x, y, w, h, 16, s.barC, a * s.mark);
+    p.rstroke(x, y, w, h, 16, LOCK, 2, a);
+    const inner = a * grow;
+    // contents flip to a contrasting ink once the slot has filled with the result colour
+    const over = s.mark > 0.01 ? chipCol(s.barC) : null;
+    const diaC = over ? mix(s.diaC, over, s.mark) : s.dia > 0.01 ? s.diaC : LOCK;
+    diamond(p, LX(i) - 48, PANEL_Y, 12 * grow * (0.6 + 0.4 * s.dia), diaC, inner);
+    if (s.barA > 0.01) {
+      const bw = 84, bx = LX(i) - 26, by = PANEL_Y - 5;
+      p.rrect(bx, by, bw, 10, 5, over ? mix(LOCK, over, s.mark * 0.4) : LOCK, inner * s.barA);
+      if (s.bar > 0) p.rrect(bx, by, Math.max(10, bw * s.bar), 10, 5, over ? mix(s.barC, over, s.mark) : s.barC, inner * s.barA);
+    }
+  }
+}
+
 function drawRail(p: Painter, t: number) {
   p.line(ROLE_X[0] - 100, RAIL_Y, ROLE_X[2] + 100, RAIL_Y, LOCK, 2, 0.9);
   // headcount dots under the staff in the dashboard chapter
@@ -530,9 +630,7 @@ function drawQueueFurniture(p: Painter, t: number) {
   const a = seg(t, T_APPLY + 0.6, T_APPLY + 1.4) * (1 - seg(t, T_INSPECT, T_INSPECT + 0.8));
   if (a <= 0) return;
   const grow = easeOutCubic(seg(t, T_APPLY + 0.6, T_APPLY + 1.6));
-  const x0 = QX(0) - 70, x1 = QX(5) + 70, m = (x0 + x1) / 2;
-  p.line(lerp(m, x0, grow), DOCK_LINE, lerp(m, x1, grow), DOCK_LINE, LOCK, 2, a);
-  for (let k = 0; k < N; k++) p.line(QX(k) - 50, DOCK_LINE, QX(k) + 50, DOCK_LINE, LOCK, 5, a * 0.5 * grow);
+  for (let k = 0; k < N; k++) p.line(QX(k) - 50 * grow, DOCK_LINE, QX(k) + 50 * grow, DOCK_LINE, LOCK, 5, a * 0.5);
 }
 
 function drawLotFurniture(p: Painter, t: number) {
@@ -544,6 +642,13 @@ function drawLotFurniture(p: Painter, t: number) {
   if (full > 0) {
     p.line(lerp(840, 300, grow), LOT_LINE, lerp(840, 1420, grow), LOT_LINE, LOCK, 2, full);
     for (let i = 0; i <= 4; i++) p.line(LX(i) - 140, LOT_LINE - 10, LX(i) - 140, LOT_LINE + 10, LOCK, 2, full * 0.8 * grow);
+    // the staff route lane above the bays, with a stop mark per bay that fills once the inspector has visited
+    p.line(lerp(840, LX(0) - 60, grow), LOT_LANE, lerp(840, LX(3) + 60, grow), LOT_LANE, EDGE, 2, full);
+    for (let i = 0; i < APPROVED.length; i++) {
+      const vis = boing(seg(t, tVisit(i) - 0.1, tVisit(i) + 0.3));
+      if (vis > 0.01) p.disc(LX(i), LOT_LANE, 6 * vis, INK, full * grow);
+      else p.line(LX(i), LOT_LANE - 8, LX(i), LOT_LANE + 8, EDGE, 2, full * grow);
+    }
   }
   // bay 2 keeps its stub while the failed truck stays parked
   const i = bayOf(FAILED);
@@ -552,7 +657,7 @@ function drawLotFurniture(p: Painter, t: number) {
   p.line(LX(i) + 140, LOT_LINE - 10, LX(i) + 140, LOT_LINE + 10, LOCK, 2, stub * 0.8);
   // sidelot shelf
   const sh = seg(t, T_INSPECT + 0.6, T_INSPECT + 1.4) * (1 - seg(t, T_BOARD, T_BOARD + 0.8));
-  for (let s = 0; s < 2; s++) p.line(SIDE[s].x - 56, SIDE[s].y + 30, SIDE[s].x + 56, SIDE[s].y + 30, LOCK, 2, sh);
+  for (let s = 0; s < 2; s++) p.line(SIDE[s].x - 66, SIDE[s].y + 40, SIDE[s].x + 66, SIDE[s].y + 40, LOCK, 2, sh);
 }
 
 function drawRoad(p: Painter, t: number) {
@@ -633,16 +738,16 @@ function drawCard(p: Painter, s: S, g: G) {
 
 function drawMenu(p: Painter, s: S, g: G, r: number) {
   if (s.menu <= 0.01) return;
-  const H = menuH(s.menuN) * s.menu, w = 150 * lerp(0.6, 1, s.menu);
-  const bottom = g.top - 14, topY = bottom - H;
-  p.line(s.x, g.top, s.x, bottom + 2, LOCK, 3);
-  p.rrect(s.x - w / 2, topY, w, H, 12, INK);
+  const H = menuH(s.menuN) * s.menu, w = MENU_W * lerp(0.6, 1, s.menu);
+  const bottom = g.top - MENU_GAP * s.menu, topY = bottom - H;
+  p.line(s.x, g.top, s.x, bottom + 2, LOCK, 4);
+  p.rrect(s.x - w / 2, topY, w, H, 14, INK);
   for (let j = 0; j < s.menuN; j++) {
     const f = seg(s.menu, (j + 0.5) / (s.menuN + 1), (j + 1.8) / (s.menuN + 1));
     if (f <= 0) continue;
     const sc = boing(f), pw = PILL_WIDTHS[r][j] * sc, q = pillPos(s, g, j);
-    p.rrect(s.x - w / 2 + 16, q.y - 5 * sc, pw, 10 * sc, 5, ACCENT, 0.95);
-    p.disc(s.x + w / 2 - 20, q.y, 4.5 * sc, GROUND);
+    p.rrect(s.x - w / 2 + 18, q.y - 8 * sc, pw, 16 * sc, 8, ACCENT, 0.95);
+    p.disc(s.x + w / 2 - 24, q.y, 6 * sc, GROUND);
   }
 }
 
@@ -668,6 +773,11 @@ function drawToken(p: Painter, s: S, k: number, t: number) {
       }
     }
   }
+  // warn halo: a thick outline so REJECTED / FAIL reads at thumbnail size
+  if (s.halo > 0.01) {
+    const o = 7 + 4 * s.halo;
+    p.rstroke(g.bx - o, g.top - o, g.F + 2 * o, g.h + g.R + 2 * o, Math.min(s.r, g.h / 2) + o, WARN, 10 * s.halo, s.halo);
+  }
   // tick or cross on the body
   if (s.mark > 0.01) {
     const cx = g.bx + g.w / 2, cy = s.y, u = g.h * 0.2;
@@ -678,24 +788,18 @@ function drawToken(p: Painter, s: S, k: number, t: number) {
       if (p2 > 0) p.line(bx, by, lerp(bx, ex, p2), lerp(by, ey, p2), INK, 6);
     } else {
       const p1 = seg(s.mark, 0, 0.5), p2 = seg(s.mark, 0.5, 1);
-      if (p1 > 0) p.line(cx - u, cy - u, lerp(cx - u, cx + u, p1), lerp(cy - u, cy + u, p1), WARN, 6);
-      if (p2 > 0) p.line(cx + u, cy - u, lerp(cx + u, cx - u, p2), lerp(cy - u, cy + u, p2), WARN, 6);
+      if (p1 > 0) p.line(cx - u, cy - u, lerp(cx - u, cx + u, p1), lerp(cy - u, cy + u, p1), WARN, 8);
+      if (p2 > 0) p.line(cx + u, cy - u, lerp(cx + u, cx - u, p2), lerp(cy - u, cy + u, p2), WARN, 8);
     }
   }
-  // checklist bar
-  if (s.barA > 0.01) {
-    const by = g.bot + g.R + 20, bw = 124;
-    p.rrect(s.x - bw / 2, by - 4, bw, 8, 4, LOCK, s.barA);
-    if (s.bar > 0) p.rrect(s.x - bw / 2, by - 4, Math.max(8, bw * s.bar), 8, 4, s.barC, s.barA);
-  }
-  // badges: ring = the Review row, diamond = the Inspection row
+  // badges: ring = the Review row, diamond = the Inspection row (grows with the warn halo on FAIL)
   if (s.ring > 0.01) {
     const rr = 11 * boing(s.ring);
     p.disc(g.ringX, g.ringY, rr + 4.5, GROUND);
     ringMark(p, g.ringX, g.ringY, rr, s.ringC, 4.5);
   }
   if (s.dia > 0.01) {
-    const d = 13 * boing(s.dia);
+    const d = (13 + 9 * s.halo) * boing(s.dia);
     diamond(p, g.diaX, g.diaY, d + 4, GROUND);
     diamond(p, g.diaX, g.diaY, d, s.diaC);
   }
@@ -825,17 +929,21 @@ function draw(p: Painter, t: number, view: View) {
 
   const v = vendorAt(t);
   const brands = [brandAt(0, t, v), brandAt(1, t, v)];
+  drawStage(p);
+  drawLotBracket(p, t);
   drawTree(p, t, v, brands);
   drawRail(p, t);
   drawQueueFurniture(p, t);
   drawLotFurniture(p, t);
   drawRoad(p, t);
   drawBoardFurniture(p, t);
+  drawPanel(p, t);
 
-  // vendor and brands
+  // vendor, its status board and brands
   p.disc(v.x, v.y, v.r, INK);
   p.disc(v.x, v.y, v.r * 0.42, GROUND);
   p.disc(v.x, v.y, v.r * 0.2, INK);
+  drawVendorBoard(p, t, v);
   for (let b = 0; b < 2; b++) {
     const B = brands[b];
     if (B.a > 0 && B.r > 0.5) {

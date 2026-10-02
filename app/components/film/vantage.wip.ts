@@ -309,41 +309,47 @@ function role2(k: number, t: number): Item {
 }
 
 /* ───────────────────────── chapter 3 · Match (rating-window matchmaking) ───────────────────────── */
-const RAIL_Y = 520, LOBBY_Y = 400;
-const QR = [860, 940, 1010, 1090, 1130, 1330, 1380, 1500, 1560];
-const SAME = [true, true, false, false, false, true, false, true, false]; // same mode+difficulty as YOU
-const PAIRS: { a: number; b: number; t: number }[] = [{ a: 0, b: 1, t: 39.0 }, { a: 5, b: 7, t: 44.0 }];
+// processMatchmaking groups the queue by mode + difficulty, so entries only ever pair inside a lane.
+// Lane 1 is YOU's group. Ratings are chosen so the only legal pairs are the ones shown:
+// lane 1: 860–940 pair at once; YOU 1200 ↔ RIVAL 1460 needs ±200 to widen twice (+50 per 30 s).
+// lane 0: 1010–1130 pair; 1380 waits. lane 2: 1500–1580 pair; 1050 and 1290 keep waiting.
+const LANE_Y = (l: number) => 420 + l * 130, RAIL_Y = LANE_Y(1), LOBBY_Y = 300;
+const QR = [860, 940, 1010, 1050, 1130, 1290, 1380, 1500, 1580];
+const LANE = [1, 1, 0, 2, 0, 2, 0, 2, 2];
+const PAIRS: { a: number; b: number; t: number }[] = [{ a: 0, b: 1, t: 39.0 }, { a: 2, b: 4, t: 40.0 }, { a: 7, b: 8, t: 44.0 }];
 const M = { bracket: 38.2, widen1: 40.4, widen2: 41.6, match: 42.0, lift: 42.5, ready1: 45.6, ready2: 46.2 };
-const TICK0 = 38.0;
+const TICK0 = 38.0, DIAL: [number, number] = [800, 180];
 function liftP(t: number, t0: number) { return settle(seg(t, t0, t0 + 1.0)); }
 function role3(k: number, t: number): Item {
   if (k === CORE) {
     const n = Math.floor((t - TICK0) / 1.0);
     const pulse = t >= TICK0 ? bump(t, TICK0 + n, TICK0 + n + 0.25) : 0;
     const sz = 64 * (1 + 0.08 * pulse);
-    return it(800, 260, sz, sz, sz / 2, mix(LOCK, ACCENT, pulse), 1, 3);
+    return it(DIAL[0], DIAL[1], sz, sz, sz / 2, mix(LOCK, ACCENT, pulse), 1, 3);
   }
   if (k === YOU || k === RIVAL) {
     const p = liftP(t, M.lift);
-    const x0 = RAIL_X(k === YOU ? R_YOU : R_RIVAL), x1 = k === YOU ? 922 : 1002;
+    const x0 = RAIL_X(k === YOU ? R_YOU : R_RIVAL), x1 = k === YOU ? 740 : 860;
     const pop = 1 + 0.15 * bump(t, M.match, M.match + 0.35);
-    const item = it(lerp(x0, x1, p), lerp(RAIL_Y, LOBBY_Y, p) - Math.sin(PI * p) * 40, 44 * pop, 44 * pop, 22 * pop, k === YOU ? ACCENT : INK, 1, 4);
+    const breathe = 1.5 * Math.sin(t * 2.1 + k);
+    const item = it(lerp(x0, x1, p), lerp(RAIL_Y, LOBBY_Y, p) - Math.sin(PI * p) * 40 + breathe, 44 * pop, 44 * pop, 22 * pop, k === YOU ? ACCENT : INK, 1, 4);
     const rt = k === YOU ? M.ready1 : M.ready2;
     if (t >= rt) { item.oc = k === YOU ? ACCENT : INK; item.ow = 4 * E(seg(t, rt, rt + 0.3)); }
     return item;
   }
-  const c = cellOf(k);
-  let x = RAIL_X(QR[c]), y = RAIL_Y, pop = 1;
+  const c = cellOf(k), ly = LANE_Y(LANE[c]);
+  let x = RAIL_X(QR[c]), y = ly + 1.2 * Math.sin(t * 1.7 + c * 1.3), pop = 1, paired = 0;
   for (const pr of PAIRS) {
     if (c === pr.a || c === pr.b) {
       const p = liftP(t, pr.t + 0.4);
       const mx = (RAIL_X(QR[pr.a]) + RAIL_X(QR[pr.b])) / 2;
-      x = lerp(x, mx + (c === pr.a ? -40 : 40), p);
-      y = lerp(RAIL_Y, LOBBY_Y, p) - Math.sin(PI * p) * 36;
+      x = lerp(x, mx + (c === pr.a ? -30 : 30), p);
+      y = lerp(ly, ly - 62, p) - Math.sin(PI * p) * 24;
       pop = 1 + 0.15 * bump(t, pr.t, pr.t + 0.35);
+      paired = p;
     }
   }
-  const col = SAME[c] ? LOCK : IDLE;
+  const col = mix(LANE[c] === 1 ? LOCK : IDLE, GREY, 0.35 * paired);
   return it(x, y, 40 * pop, 40 * pop, 20 * pop, col, 1, 1);
 }
 
@@ -801,32 +807,59 @@ function linkArc(p: Painter, A: Item, Bi: Item, t: number, t0: number, col: RGB,
 function fx3(p: Painter, t: number) {
   const a = env(t, 3);
   if (a <= 0) return;
-  const g = grow(t, 3);
-  p.line(300, RAIL_Y, lerp(300, 1300, g), RAIL_Y, EDGE, 4, a);
-  for (let n = 0; n <= 8; n++) {
-    const x = RAIL_X(800 + n * 100);
-    if (x > lerp(300, 1300, g)) break;
-    p.line(x, RAIL_Y + 14, x, RAIL_Y + 26, n === 4 ? LOCK : EDGE, 3, a);
+  // Three queue lanes (one per mode + difficulty group); a dot key on the left, YOU's lane brighter.
+  for (let l = 0; l < 3; l++) {
+    const y = LANE_Y(l), g = grow(t, 3, l * 0.08), mine = l === 1;
+    const xe = lerp(300, 1300, g);
+    p.line(300, y, xe, y, mine ? LOCK : EDGE, mine ? 4 : 2.5, a);
+    for (let n = 0; n <= 8; n++) {
+      const x = RAIL_X(800 + n * 100);
+      if (x > xe) break;
+      p.line(x, y + 14, x, y + 24, n === 4 ? LOCK : EDGE, 2.5, a);
+    }
+    p.rstroke(170, y - 20, 90, 40, 20, mine ? LOCK : EDGE, 2, a * g);
+    for (let d = 0; d < 3; d++) p.disc(193 + d * 22, y, 5, d <= l ? (mine ? ACCENT : LOCK) : EDGE, a * g);
   }
-  // Lobby rail appears with the first pair.
-  const lg = E(seg(t, PAIRS[0].t + 0.6, PAIRS[0].t + 1.4));
-  if (lg > 0) p.line(lerp(800, 350, lg), LOBBY_Y + 40, lerp(800, 1250, lg), LOBBY_Y + 40, EDGE, 2, a);
-  // Window bracket out of YOU (±200, widening 50 per 30 s).
+  // Window bracket out of YOU (±200, widening 50 per 30 s of waiting).
   const hw = bracketHalf(t);
+  const fade = 1 - seg(t, M.lift, M.lift + 0.8);
   if (hw > 0) {
     const x0 = RAIL_X(R_YOU) - hw;
-    p.rrect(x0, RAIL_Y - 40, 2 * hw, 80, 20, ACCENT, a * 0.08 * (1 - seg(t, M.lift, M.lift + 0.8)));
-    p.rstroke(x0, RAIL_Y - 40, 2 * hw, 80, 20, ACCENT, 2, a * 0.6 * (1 - seg(t, M.lift, M.lift + 0.8)));
+    p.rrect(x0, RAIL_Y - 40, 2 * hw, 80, 20, ACCENT, a * 0.08 * fade);
+    p.rstroke(x0, RAIL_Y - 40, 2 * hw, 80, 20, ACCENT, 2, a * 0.6 * fade);
   }
-  // The matchmaking job: a dial whose hand sweeps once per tick.
-  p.arc(800, 260, 46, 0, PI * 2, EDGE, 2, a);
+  // YOU's wait arc: sweeps once per 30 s step and restarts when the window widens.
+  if (fade > 0) {
+    const w0 = t < M.widen1 ? M.bracket : t < M.widen2 ? M.widen1 : M.widen2;
+    const w1 = t < M.widen1 ? M.widen1 : t < M.widen2 ? M.widen2 : M.widen2 + 1.2;
+    const sw = PI * 2 * clamp01(seg(t, w0, w1));
+    const Y = role3(YOU, t);
+    if (sw > 0 && t < M.lift) p.arc(Y.x, Y.y, 34, -PI / 2, -PI / 2 + sw, ACCENT, 3, a * 0.8 * fade);
+    // Widen steps as pips above the bracket.
+    for (let n = 0; n < 2; n++) {
+      const on = t >= (n === 0 ? M.widen1 : M.widen2);
+      p.disc(RAIL_X(R_YOU) - 12 + n * 24, RAIL_Y - 58, 5, on ? ACCENT : EDGE, a * fade * seg(t, M.bracket, M.bracket + 0.4));
+    }
+  }
+  // The matchmaking job: a dial whose hand sweeps once per 5 s tick, dropping a scan line on every lane.
+  p.arc(DIAL[0], DIAL[1], 46, 0, PI * 2, EDGE, 2, a);
   const ang = ((t - TICK0) % 1.0) * PI * 2 - PI / 2;
-  p.line(800, 260, 800 + Math.cos(ang) * 40, 260 + Math.sin(ang) * 40, ACCENT, 3, a * 0.8);
-  for (let n = 0; n < 4; n++) p.disc(800 + Math.cos(n * PI / 2) * 46, 260 + Math.sin(n * PI / 2) * 46, 4, LOCK, a);
-  // Links between pairs and between YOU and RIVAL.
+  p.line(DIAL[0], DIAL[1], DIAL[0] + Math.cos(ang) * 40, DIAL[1] + Math.sin(ang) * 40, ACCENT, 3, a * 0.8);
+  for (let n = 0; n < 4; n++) p.disc(DIAL[0] + Math.cos(n * PI / 2) * 46, DIAL[1] + Math.sin(n * PI / 2) * 46, 4, LOCK, a);
+  if (t >= TICK0) {
+    const u = ((t - TICK0) % 1.0) / 0.6;
+    if (u < 1) {
+      const sx = lerp(300, 1300, ES(u));
+      p.line(sx, LANE_Y(0) - 34, sx, LANE_Y(2) + 34, INK, 1.5, a * 0.22 * Math.sin(PI * u));
+    }
+  }
+  p.line(DIAL[0], DIAL[1] + 50, DIAL[0], lerp(DIAL[1] + 50, LOBBY_Y - 40, grow(t, 3, 0.2)), EDGE, 2, a * 0.6);
+  // Links inside each lane's pair, and the YOU ↔ RIVAL link.
   for (const pr of PAIRS) linkArc(p, role3(pr.a + 3, t), role3(pr.b + 3, t), t, pr.t, LOCK, a);
   linkArc(p, role3(YOU, t), role3(RIVAL, t), t, M.match, ACCENT, a);
-  // Ready-up ticks.
+  // Lobby pad under the lifted pair, then ready-up ticks.
+  const lq = E(seg(t, M.lift + 0.3, M.lift + 1.1));
+  if (lq > 0) p.rstroke(800 - 130 * lq, LOBBY_Y - 46, 260 * lq, 92, 46, ACCENT, 2, a * 0.6);
   const Y = role3(YOU, t), R = role3(RIVAL, t);
   tick(p, Y.x, Y.y - 50, 22, ACCENT, 4, seg(t, M.ready1, M.ready1 + 0.4), a);
   tick(p, R.x, R.y - 50, 22, INK, 4, seg(t, M.ready2, M.ready2 + 0.4), a);
@@ -1088,7 +1121,7 @@ function fx8(p: Painter, t: number) {
 
 /* ───────────────────────── ripples (the eight biggest moments) ───────────────────────── */
 const RIPPLES: [number, number, number][] = [
-  [QS_LAST.t0, 960, 600], [TS_END, ROW1_X(7), ROW1_Y], [J.accept, 1100, 420], [M.match, 962, RAIL_Y],
+  [QS_LAST.t0, 960, 600], [TS_END, ROW1_X(7), ROW1_Y], [J.accept, 1100, 420], [M.match, 1012, RAIL_Y],
   [B.win, P_YOU_X, PL_Y], [RK.levelup, 1300, 660], [SV.sse, 1330, 520], [STAGE_DONE[1], 800, 480],
 ];
 
